@@ -2,11 +2,9 @@
 require(datasets) ## R library for built-in datasets 
 require(stats) ## R statistical functions
 require(visreg) ## Visualization of regression models
-require(broom) ## Data wrangling tool 
-require(dplyr) ## Data wrangling tool 
 require(ggplot2)
 require(psych)
-data <- tibble(read.table('./lecture2/iqsize.txt', header = T))
+data <- read.table('./lecture2/iqsize.txt', header = T)
 ## visually inspect the data, 
 ## the pairs.panels function from 'psych' package is a nice one 
 ## for this purpose:
@@ -49,16 +47,17 @@ anova(fit2,fit)
 ## from model 1 ('fit')
 ## create vector of y-yhat (since sum(y-yhat)^2 = y_diff'*y_diff)
 y1_diff <- data$PIQ - fitted(fit)
-RSS1<-t(y1_diff)%*%(y_diff)
+RSS1<-t(y1_diff)%*%(y1_diff)
 # number of params for model 1
 p1<-length(coef(fit))
 
+# replicate F test manually
 y2_diff <- data$PIQ - fitted(fit2)
 RSS2<-t(y2_diff)%*%(y2_diff)
 # number of params for model 2
 p2<-length(coef(fit2))
 
-Fstar <- round(((RSS1-RSS2)/(p1-p2))/(RSS1/(nrow(data)-p1)),3)
+Fstar <- round(((RSS1-RSS2)/(p1-p2))/(RSS1/(nrow(data)-p1)),5)
 
 ## theoretically, Fstar should follow the F distribution 
 ## with degrees of freedom: p1-p2, n-p1
