@@ -1,0 +1,406 @@
+---
+title: "GLM with binary response"
+author: "Sami Cheong"
+date: "1/22/2025"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE, fig.pos='center')
+library(faraway)
+library(ggplot2)
+library(dplyr)
+```
+
+## Heart disease example 
+
+What might affect the chance of getting heart disease? One of the earliest studies addressing this issue started in 1960 and used 3154 healthy men, aged from 39 to 59, from the San Francisco area. At the start of the study, all were free of heart disease. Eight and a half years later, the study recorded whether these men now suffered from heart disease along with many other variables that might be related to the chance of developing this disease. 
+
+We load a subset of this data (cigarette use, height, and heart disease) from the Western Collaborative Group Study described in Rosenman et al. (1975) and focus on just three of the variables in the dataset:
+
+```{r}
+data(wcgs, package="faraway")
+wcgs <- na.omit(wcgs)
+summary(wcgs[,c("chd","height","cigs")])
+```
+
+The variable `chd` indicates whether or not the person suffered from coronary heart disease, let's transform that to a binary variable 
+
+```{r}
+wcgs$y <- ifelse(wcgs$chd == 'yes',1,0)
+
+```
+
+## Exploratory data analysis:
+
+Let's visualize the response and predictor variables in different dimensions to get a sense of how we should model it:
+
+```{r }
+## boxplot view:
+plot(height ~ chd, wcgs, col = 'red',
+     main = 'Height vs Heart Disease' )
+## jitter plot view
+plot(jitter(y,0.1)~jitter(height),wcgs,
+     xlab="Height", ylab="Heart Disease", pch=".")
+
+```
+
+
+We can also use `ggplot` to explore the visualization, for example here are some plots of height and cigarette consumption information of the subjects separated by heart disease status:
+
+```{r}
+ggplot(wcgs, aes(x=height, fill=chd)) + 
+  geom_histogram(position="dodge", binwidth=1)+
+  theme_bw()+ggtitle('Distribution of height')
+
+ggplot(wcgs, aes(x=cigs, fill=chd)) + 
+  geom_histogram(position="dodge", binwidth=5, 
+                 aes(y=..density..))+
+  ggtitle('Distribution of # of cigarettes smoked per day')+theme_bw()
+
+```
+
+
+We can also separate the plots based on a chosen group using a `ggplot` feature called `facets`
+
+```{r}
+ggplot(wcgs, aes(x=height,y=cigs))+
+  geom_point(alpha=0.2, position=position_jitter())+
+  facet_grid(~ chd)+theme_bw()
+
+```
+
+
+
+## Analysis objective:   
+
+Our goal here is to predict the heart disease outcome for a given individual and also to explain the relationship between height, cigarette usage and heart disease. 
+
+Notice that for the same height and cigarette consumption, both outcomes can occur. It makes more sense then to model the response as a probability instead.
+
+## Model building :
+
+Let $y_i$ be a binary variable indicating presence or absence of heart disease (1, or 0). We would like to model it as the following :
+
+\[p(\text{Heart disease for subject} i) = h(\beta_0 + \beta_1 \text{(Height)} + \beta_2 \text{(Cigarette use)}\]
+
+where $h = g^{-1}, g(\cdot)$ is the link function.
+
+We can implement this in R as:
+
+```{r}
+
+glmod <- glm(formula = chd ~ height + cigs, 
+             family = binomial(link = 'logit'), 
+             data = wcgs)
+
+```
+
+## Understanding the model output:
+
+Let's take a look at the summary of the model object `glmod`:
+
+
+```{r}
+
+summary(glmod)
+
+```
+
+
+Recall the model formula is the following:
+
+\[p(\text{Heart disease for subject} i) = h(\beta_0 + \beta_1 \text{(Height)} + \beta_2 \text{(Cigarette use)}\]
+
+since we chose the logit function as the link function, this can either be expressed as 
+
+\[
+\log(\frac{p}{1-p}) = \beta_0 + \beta_1 \text{(Height)} + \beta_2 \text{(Cigarette use)} 
+\]
+
+*Model coefficients* : in here the $\beta$ values correspond to the change of the log odds of the response. Notice the range of the log odds is $(-\infty,\infty)$ vs $[0,1]$
+
+```{r}
+
+beta <- coef(glmod)
+print(beta)
+
+```
+
+For example, keeping everything else fixed, increase 1 cigarette smoked per day is associated with increasing the log odds of having heart disease by 0.023, or 2.3%.
+
+Another way to interpret the model result is to look at the odds instead:
+
+\[ \text{odds of heart disease} = e^{\beta_0} e^{\beta_1\text{Height}}e^{\beta_2\text{Cigs}}\]
+
+The model output is the follows:
+
+```{r}
+
+print(exp(beta))
+```
+
+This tells us that a unit increase in , for example, cigarettes smoked per day, increases the odds of heart disease by a factor of $e^{\beta_1}$ or 1.023, which is again about an 2.3% increase.
+
+
+
+### Model inference 
+
+*Null deviance:* A low null deviance implies that the data can be modeled using only the intercept (without other predictors). If the null deviance is low, we should consider using fewer features for modeling the data.
+
+*Residual deviance:* A low residual deviance implies that the model we have trained is appropriate.
+
+
+There are several ways to compare models. We can use the deviance as a metric with the following example
+
+```{r}
+D0<-1781.2
+D1<-1749.0
+dstar <- D0-D1
+p_val<-1-pchisq(dstar,2)
+print(p_val)
+
+```
+
+We can also test the individual predictors by fitting models that drop these predictors and compute the difference in the deviance observed, here is an example testing the importance of the variance `height` 
+
+```{r}
+
+glmodc <- glm(chd ~ cigs, family = binomial, wcgs)
+anova(glmodc,glmod, test="Chi")
+
+```
+
+We can also test all predictors of the model in similar fashion using the `dropl` function 
+
+```{r}
+drop1(glmod,test="Chi")
+
+```
+
+
+### Model testing by confidence interval
+
+Wald-type : assumes the asymptotic distribution of $\hat{\beta}/se(\hat{\beta})$ follows the standard normal distribution
+
+Profile likelihood: uses likelihood function to establish confidence interval 
+
+Example for our dataset here:
+
+Recalling model output:
+```{r}
+
+summary(glmod)$coefficients
+
+```
+
+We can use the information above (Estimate, Std. Error) to construct a typical 95% confidence interval using `confint`. Take the coefficient for `height` as an example:
+
+```{r}
+
+0.025 + c(-1,1) * 1.96 * 0.0263
+```
+
+Alternatively, we can use the profile likelihood method:
+
+```{r}
+confint(glmod)
+
+```
+
+
+### Model diagnostics 
+
+Two ways of computing model residuals:
+
+```{r}
+
+## predictions on linear scale (Real line)
+linpred <- predict(glmod)
+
+## predictions on probability scale (0,1)
+predprob <- predict(glmod, type="response")
+
+print(head(linpred))
+print(head(predprob))
+print(head(ilogit(linpred)))
+```
+
+Notice that the first one (linear predictions) are the values of  $\eta_i = \beta_0 + \beta_1X_{1i}  + \beta_2 X_{2i}$, while the second one is $h(\eta_i), h = g^{-1}$. In this case, $g = logit()$ so $h$ is the inverse of the logit function (in the Faraway package that is `ilogit`)
+
+Let's take a look at the raw residuals $y_i - \hat{p}_i$
+
+```{r}
+
+rawres <- wcgs$y - predprob
+
+print(head(rawres))
+
+```
+
+Alternatively, can also get them using the `residuals` function
+
+```{r}
+
+print(head(residuals(glmod, type="response")))
+
+```
+
+Let's take a first look at the residual plots:
+
+```{r}
+
+plot(rawres ~ linpred, xlab="linear predictor", ylab="residuals")
+```
+
+
+
+We now construct a more useful residuals plot by grouping the residuals into bins where the bins are based on similar predictor values. 
+
+The choice of the number of bins depends on the size of the dataset. 
+
+We choose 100 bins so that we have roughly 30 observations per bin. Some effort is required to construct this plot. 
+
+The `dplyr` package of Wickham and Francois (2015) is useful for this task. First, we add the
+residuals and linear predictor into the data frame.
+
+
+```{r}
+
+library(dplyr)
+wcgs <- mutate(wcgs, residuals=residuals(glmod), linpred=predict(glmod))
+
+## create bins for the values:
+
+gdf <- group_by(wcgs, cut(linpred, breaks=unique(quantile(linpred,(1:100)/101))))
+
+## summarize by mean of the residuals and predictors
+diagdf <- summarise(gdf, residuals=mean(residuals), linpred=mean(linpred))
+
+plot(residuals ~ linpred, diagdf, xlab="linear predictor")
+```
+
+
+Detecting unusual cases via hat values:
+
+Here's an example using half-normal plot
+
+```{r}
+halfnorm(hatvalues(glmod))
+```
+
+### Model selection
+
+There are a few different methods for model selection. One common approach is the backward algorithm, which can be implemented using the `drop1` function 
+
+```{r}
+## create a new variable called bmi:
+wcgs$bmi <- with(wcgs, 703*wcgs$weight/(wcgs$height^2))
+glmod1 <- glm(chd ~ age + height + weight +bmi 
+              + sdp + dbp + chol +dibep +
+                cigs +arcus, family=binomial, wcgs) 
+
+
+drop1(glmod1,test = 'Chisq')
+
+## drop height, bmi, weight, dbp, arcus
+glmod2 <- glm(chd ~ age  + sdp + chol +dibep + cigs , 
+              family=binomial, wcgs) 
+drop1(glmod2,test = 'Chisq')
+
+### try subset selection using AIC:
+
+glmod3<-step(glmod1,trace = 0)
+summary(glmod3)
+
+
+```
+
+
+### Checking model fit 
+
+
+
+#### Hosmer-Lemeshow method (Binning)
+
+
+```{r}
+
+
+## create a new column in the dataset called predprob 
+## which is the output of the logistic regression model
+wcgs <- mutate(wcgs, linpred = fitted(glmod3), predprob=predict(glmod3,type="response"))
+## create bins and group the model ouptut by them
+gdf <- group_by(wcgs, cut(linpred, breaks=unique(quantile(linpred,(1:100)/101))))
+hldf <- summarise(gdf, y=sum(y), 
+                  ppred=mean(predprob), 
+                  count=n())%>%
+  mutate(se.fit=sqrt(ppred*(1-ppred)/count))
+
+ggplot(hldf,aes(x=ppred,
+                y=y/count,
+                ymin=y/count-2*se.fit,
+                ymax=y/count+2*se.fit))+geom_point()+
+  geom_linerange(color=grey(0.75))+
+  geom_abline(intercept=0,slope=1)+xlab("Predicted Probability")+ylab("Observed Proportion")+ggtitle('bin # = 100')
+
+```
+
+```{r}
+### H-L statistic and degrees of freedom:
+
+hlstat <- with(hldf, 
+               sum( (y-count*ppred)^2/(count*ppred*(1-ppred))))
+c(hlstat, nrow(hldf))
+
+## p-value of the observed H-L stat:
+
+1-pchisq(63.212, 56-1)
+```
+
+#### Contingency table 
+
+
+```{r}
+
+wcgs <- mutate(wcgs, 
+               predout = ifelse(predprob < 0.5, "no", "yes"))
+xtabs( ~ chd + predout, wcgs)
+```
+
+
+#### ROC curve 
+
+Testing an array of threshold for the predicted probability of heart disease, then see how it changes the true negative (specificity) vs true positive (sensitivity)
+
+```{r}
+thresh <- seq(0.01,0.5,0.01)
+Sensitivity <- numeric(length(thresh))
+Specificity <- numeric(length(thresh))
+for(j in seq(along=thresh)){
+  pp <- ifelse(wcgs$predprob < thresh[j],
+               "no","yes")
+  xx <- xtabs( ~ chd + pp, wcgs)
+  Specificity[j] <- xx[1,1]/(xx[1,1]+xx[1,2])
+       Sensitivity[j] <- xx[2,2]/(xx[2,1]+xx[2,2])
+}
+
+```
+
+```{r}
+
+matplot(thresh,cbind(Sensitivity,Specificity),
+        type="l",xlab="Threshold for p",
+        ylab="Proportion",lty=1:2, 
+        main ='Sensitivity and Specificity vs threshold')
+legend(0.25,0.6,lty=1:2,
+       col = c('black','red'),
+       legend = c('Sensitivity','Specificity'))
+
+
+plot(1-Specificity,Sensitivity,type="l", 
+     col='blue',
+     main = 'Receiver Operating Characteristic (ROC) Curve' )
+abline(0,1,lty=2)
+
+```
