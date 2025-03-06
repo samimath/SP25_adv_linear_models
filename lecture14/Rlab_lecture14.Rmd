@@ -1,0 +1,142 @@
+---
+title: "SDS 4392 R lab1"
+author: "Washington University"
+date: "3/06/2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Learning Objectives 
+
+- We will use this class to review various ways of solving modeling problems
+- Practice common data wrangling, data exploratory, model building and inferences in R.
+
+
+## Warm up exercise
+
+In this example we will practice generating data according to the assuming of Poisson distribution with some covariates:
+
+a) Create a simulated data frame named `df0` with 100 rows and 4 columns that fits the following criteria:
+
+- has 2 numerical variables, each randomly generated with range [0,1.5] and [-2,2] respectively, let's call them `x1` and `x2`
+- has 1 categorical / factor variables, each with levels `yes`,`no` respectively, let's call it `x3` 
+
+- has a variable named `y` that follows the Poisson distribution with the following mean: $\mu = 2 + 0.7x_1 - 1.3x_2$
+
+```{}
+
+
+```
+
+
+
+b) Now pretend we don't know the values that were used to simulate the data, fit a generalized linear model with Poisson family for all the variables. What are the model effects for `x1`, `x2` and `x3`? 
+
+```{}
+
+```
+
+
+c) Now, drop the variable that is not significant and augment the dataset with the pearson residuals using the `augment(<model>)` function. Plot the following :
+- plot fitted value vs the response
+- response $y$ vs `residual`
+- fitted value $\hat{y}$ vs `residual`
+
+
+what do we notice?
+
+```{}
+
+```
+
+
+
+## Exercise 1:
+The salmonella data was collected in a salmonella reverse mutagenicity assay. The predictor is the dose level of quinoline and the response is the numbers of revertant colonies of TA98 salmonella observed on each of three replicate plates.
+
+(a) Plot the data and comment on the relationship between dose and colonies.
+
+
+```{r}
+
+
+
+```
+
+
+
+(b) Compute the mean and variance within each set of observations with the same dose. Plot the variance against the mean and comment on what this says about
+overdispersion.
+
+
+```{r}
+
+
+```
+
+
+
+(c) Fit a model with dose treated as a six-level factor. Check the deviance to determine whether this model fits the data.
+
+
+```{r}
+
+
+
+```
+
+
+Do you think it is possible to find a transformation of the dose predictor that results in a Poisson model that does fit the data?
+
+
+
+(d) Make a QQ plot of the residuals from the previous model. Interpret the plot.
+
+
+```{}
+
+
+
+
+```
+
+(e) Fit a Poisson model that includes an overdispersion parameter and is quadratic in the dose. Can we determine from the deviance of this model whether the fit is adequate?
+
+```{}
+
+
+```
+
+(f) Plot the residuals against the fitted values for the previous model. Interpret the
+plot.
+
+```{}
+
+```
+
+(g) Plot the fitted mean response of this model on top of the data.
+
+
+```{}
+
+
+```
+
+(h) Give the predicted mean response for a dose of 500. Compute a 95% confidence interval.
+
+
+```{}
+
+
+```
+
+(i) At what dose does the maximum predicted response occur?
+
+```{}
+
+
+```
+
