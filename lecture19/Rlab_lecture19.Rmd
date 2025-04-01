@@ -1,0 +1,53 @@
+---
+title: "SDS 4392 R lab2"
+author: "Washington University"
+date: "04/01/2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## load packages
+library(ggplot2)
+library(faraway)
+library(lme4)
+library(MASS)
+library(dplyr)
+```
+
+
+
+1. The `denim` dataset concerns the amount of waste in material cutting for a jeans manufacturer due to five suppliers.
+
+a) Plot the data and comment.
+
+b) Fit the linear fixed effects model. Is the operator significant?
+
+c) Make a useful diagnostic plot for this model and comment.
+
+d) Analyze the data with supplier as a random effect. What are the estimated
+standard deviations of the effects?
+
+e) Test the significance of the supplier term.
+
+----------------------------------------------------------------
+2. A number of growers supply broccoli to a food processing plant. The plant instructs the growers to pack the broccoli into standard-size boxes. There should be 18 clusters of broccoli per box. Because the growers use different varieties and methods of cultivation, there is some variation in the cluster weights. The plant manager selected three growers at random and then four boxes at random supplied by these growers. Three clusters were selected from each box. The data may be found in the `broccoli` dataset. The weight in grams of the cluster is given.
+
+a) Plot the data and comment on the nature of the variation seen.
+
+
+b) Compute the mean weights within growers. Compute the mean weights within boxes.
+
+
+c) Fit an appropriate mixed effects model. Comment on how the variation is assigned to the possible sources.
+
+
+d) Test whether there may be no variation attributable to growers.
+
+
+
+e) Test whether there may be no variation attributable to boxes.
+
+
+
